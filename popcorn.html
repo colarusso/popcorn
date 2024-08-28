@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Is my popcorn done?</title>
+
+    <!-- Page-specific metadata -->
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content='Is my popcorn done?'/>
+    <meta property="og:description" content="Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within 'earshot'); hit 'Start' below. Once the time between pops grows too big, we'll let you know."/>
+    <meta property="og:image" content="popcorn.jpg"/>
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="683" />
+
+    <!-- Metadata for mobile -->
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="apple-touch-icon" href="popcorn_icon.png"/>
+
+    <!-- JS & style -->
+    <link rel="shortcut icon" type="image/x-icon" href="popcorn_icon.png">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: white; /* Default background color */
+        }
+
+        #startButton {
+            font-size: 24px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        #popDetails {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Is my 🍿 done?</h1>
+    <p style="text-align: justify;">Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within "earshot"); hit "Start" below. Once the time between pops exceeds <a id="timeout_link" href="javascript:set_timeout();">1.5 seconds</a>, we'll let you know.</p>
+    <button id="startButton">Start</button>
+    <div id="status"></div>
+    <div id="popDetails"></div>
+
+    <script>
+
+        var timeout = localStorage.getItem("timeout") || 1.5
+
+        document.getElementById("timeout_link").innerHTML = timeout + " seconds"
+
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
+        const popDetailsDiv = document.getElementById('popDetails');
+
+        let audioContext;
+        let analyser;
+        let microphone;
+        let javascriptNode;
+        let popTimes = [];
+        let listening = false;
+
+        startButton.addEventListener('click', startDetection);
+
+        function startDetection() {
+            // Reset the state
+            document.body.style.backgroundColor = 'white';
+            startButton.disabled = true;
+            statusDiv.innerHTML = 'Calibrating...';
+            popDetailsDiv.innerHTML = '';
+            popTimes = [];
+            listening = false;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024;
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+                    microphone.connect(analyser);
+                    analyser.connect(javascriptNode);
+                    javascriptNode.connect(audioContext.destination);
+
+                    javascriptNode.onaudioprocess = function() {
+                        analyser.getByteTimeDomainData(dataArray);
+
+                        let maxVolume = Math.max(...dataArray) - 128;
+                        if (maxVolume > 10 && !listening) {
+                            // Start listening for pops
+                            listening = true;
+                            popTimes = [];
+                            statusDiv.innerHTML = 'Listening...';
+                        }
+
+                        if (listening && maxVolume > 10) {
+                            const currentTime = audioContext.currentTime;
+                            if (popTimes.length > 0) {
+                                const timeBetweenPops = currentTime - popTimes[popTimes.length - 1];
+                                
+                                // Check if popcorn is done
+                                if (timeBetweenPops >= timeout) {
+                                    statusDiv.innerHTML = '<strong>Your popcorn is done!</strong>';
+                                    document.body.style.backgroundColor = '#ccffcc'; // Light pastel green
+                                    stopDetection();
+                                } else if (startButton.disabled==true) {
+                                    popDetailsDiv.innerHTML = `Time between pops: ${timeBetweenPops.toFixed(2)} seconds<br>`;
+                                }
+
+                            }
+
+                            popTimes.push(currentTime);
+                        }
+                    };
+                })
+                .catch(err => {
+                    statusDiv.innerHTML = 'Error accessing microphone: ' + err.message;
+                    startButton.disabled = false;
+                });
+        }
+
+        function stopDetection() {
+            startButton.disabled = false;
+            microphone.disconnect();
+            javascriptNode.disconnect();
+            popDetailsDiv.innerHTML = ``;
+        }
+
+        function set_timeout(){
+            var answer = 1*prompt(`How many seconds between pops before it's "done?"`);
+            if (answer != null && answer.length !== 0) {
+                if (!isNaN(answer)){
+                    document.getElementById("timeout_link").innerHTML = answer + " seconds"
+                    localStorage.setItem("timeout", answer);
+                    timeout = localStorage.getItem("timeout")
+                } else {
+                    alert("I couldn't read that number, please try again.")
+                }
+            }
+        }
+    </script>
+</body>
+</html>
