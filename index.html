@@ -7,8 +7,8 @@
     <!-- Page-specific metadata -->
     <meta property="og:type" content="website"/>
     <meta property="og:title" content='Is my popcorn done?'/>
-    <meta property="og:description" content="Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within 'earshot'); hit 'Start' below. Once the time between pops grows too big, we'll let you know."/>
-    <meta property="og:image" content="popcorn.jpg"/>
+    <meta property="og:description" content="Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within 'earshot'); hit 'Start' below. Once the time between pops grows too big, it will let you know."/>
+    <meta property="og:image" content="http://www.davidcolarusso.com/images/popcorn.jpg"/>
     <meta property="og:image:width" content="1024" />
     <meta property="og:image:height" content="683" />
 
@@ -45,20 +45,44 @@
             margin-top: 20px;
             font-size: 18px;
         }
+
+        #footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            width:100%;
+            bottom: 15px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <h1>Is my 🍿 done?</h1>
-    <p style="text-align: justify;">Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within "earshot"); hit "Start" below. Once the time between pops exceeds <a id="timeout_link" href="javascript:set_timeout();">1.5 seconds</a>, we'll let you know.</p>
+    <p style="text-align: justify;">Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within "earshot"); hit the "Start" button below. Once it hears <a id="examples_link" href="javascript:set_examples();">2 examples</a> of the time between pops exceeding <a id="timeout_link" href="javascript:set_timeout();">1.5 seconds</a>, it will let you know by displaying a message and changing the background color of this screen.</p>
     <button id="startButton">Start</button>
     <div id="status"></div>
     <div id="popDetails"></div>
+    <div id="footer"><p>By <a href="https://sadlynothavocdinosaur.com/" target="_blank">David Colarusso</a></p></div>
 
     <script>
 
-        var timeout = localStorage.getItem("timeout") || 1.5
+        var n_long = 0;
 
-        document.getElementById("timeout_link").innerHTML = timeout + " seconds"
+        var examples = localStorage.getItem("examples") || 2
+        if (examples==1){
+            var examplesmod = " example"
+        } else {
+            var examplesmod = " examples"
+        }
+        document.getElementById("examples_link").innerHTML = examples + examplesmod       
+
+        var timeout = localStorage.getItem("timeout") || 1
+        if (timeout==1){
+            var timemod = " second"
+        } else {
+            var timemod = " seconds"
+        }
+        document.getElementById("timeout_link").innerHTML = timeout + timemod
 
         const startButton = document.getElementById('startButton');
         const statusDiv = document.getElementById('status');
@@ -115,9 +139,14 @@
                                 
                                 // Check if popcorn is done
                                 if (timeBetweenPops >= timeout) {
-                                    statusDiv.innerHTML = '<strong>Your popcorn is done!</strong>';
-                                    document.body.style.backgroundColor = '#ccffcc'; // Light pastel green
-                                    stopDetection();
+                                    n_long += 1;
+                                    if (n_long>=examples){
+                                        statusDiv.innerHTML = '<strong>Your popcorn is done!</strong>';
+                                        document.body.style.backgroundColor = '#ccffcc'; // Light pastel green
+                                        stopDetection();
+                                    } else {
+                                        popDetailsDiv.innerHTML = `Time between pops: ${timeBetweenPops.toFixed(2)} seconds<br>`;
+                                    }
                                 } else if (startButton.disabled==true) {
                                     popDetailsDiv.innerHTML = `Time between pops: ${timeBetweenPops.toFixed(2)} seconds<br>`;
                                 }
@@ -141,11 +170,34 @@
             popDetailsDiv.innerHTML = ``;
         }
 
-        function set_timeout(){
-            var answer = 1*prompt(`How many seconds between pops before it's "done?"`);
+        function set_examples(){
+            var answer = prompt(`How many examples of "long pauses" do you need to see before it's "done?"`);
             if (answer != null && answer.length !== 0) {
                 if (!isNaN(answer)){
-                    document.getElementById("timeout_link").innerHTML = answer + " seconds"
+                    if (answer==1){
+                        var timemod = " example"
+                    } else {
+                        var timemod = " examples"
+                    }
+                    document.getElementById("examples_link").innerHTML = answer + timemod
+                    localStorage.setItem("examples", answer);
+                    timeout = localStorage.getItem("examples")
+                } else {
+                    alert("I couldn't read that number, please try again.")
+                }
+            }
+        }
+
+        function set_timeout(){
+            var answer = prompt(`How many seconds between pops before it's "done?"`);
+            if (answer != null && answer.length !== 0) {
+                if (!isNaN(answer)){
+                    if (answer==1){
+                        var timemod = " second"
+                    } else {
+                        var timemod = " seconds"
+                    }
+                    document.getElementById("timeout_link").innerHTML = answer + timemod
                     localStorage.setItem("timeout", answer);
                     timeout = localStorage.getItem("timeout")
                 } else {
