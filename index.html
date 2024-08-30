@@ -46,6 +46,12 @@
             font-size: 18px;
         }
 
+        #funfact{
+            margin-bottom: 0px;
+            text-align: justify;
+            padding: 0 25px;
+        }
+
         #footer {
             position: absolute;
             left: 0;
@@ -58,17 +64,17 @@
 </head>
 <body>
     <h1>Is my 🍿 done?</h1>
-    <p style="text-align: justify;">Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); get this device close to your popcorn (within "earshot"); hit the "Start" button below. Once it hears <a id="examples_link" href="javascript:set_examples();">2 examples</a> of the time between pops exceeding <a id="timeout_link" href="javascript:set_timeout();">1.5 seconds</a>, it will let you know by displaying a message and changing the background color of this screen.</p>
+    <p style="text-align: justify;">Enable your microphone; wait for your popcorn to come to a rolling pop (multiple pops per second); quite all non-popping noise; get this device close to your popcorn (within "earshot"); hit the "Start" button below. Once it hears <a id="examples_link" href="javascript:set_examples();">2 examples</a> of the time between pops exceeding <a id="timeout_link" href="javascript:set_timeout();">1.5 seconds</a>, it will let you know by displaying a message and changing the background color of this screen.</p>
     <button id="startButton">Start</button>
     <div id="status"></div>
     <div id="popDetails"></div>
-    <div id="footer"><p>By <a href="https://sadlynothavocdinosaur.com/" target="_blank">David Colarusso</a></p></div>
+    <div id="footer"><p id="funfact"><i><a href="https://www.youtube.com/watch?v=Limpr1L8Pss" target="_blank">Fun Fact</a>: Most microwave's use a timer or mosture detector when you hit "popcorn." Only a minority use auditory systems like this.</i></p><p>By <a href="https://sadlynothavocdinosaur.com/" target="_blank">David Colarusso</a></p></div>
 
     <script>
 
-        var n_long = 0;
+        var n_long;
 
-        var examples = localStorage.getItem("examples") || 2
+        var examples = localStorage.getItem("examples") || 3
         if (examples==1){
             var examplesmod = " example"
         } else {
@@ -76,7 +82,7 @@
         }
         document.getElementById("examples_link").innerHTML = examples + examplesmod       
 
-        var timeout = localStorage.getItem("timeout") || 1
+        var timeout = localStorage.getItem("timeout") || 1.5
         if (timeout==1){
             var timemod = " second"
         } else {
@@ -105,6 +111,15 @@
             popDetailsDiv.innerHTML = '';
             popTimes = [];
             listening = false;
+            topthresh = 100;
+            bottomthresh = 0;
+            threshold = 100000;
+
+            n_long = 0;
+            console.log(`========================================`)
+            console.log(`               NEW SESSION              `)
+            console.log(`========================================`)
+            console.log('Calibrating...')
 
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
@@ -125,20 +140,32 @@
                         analyser.getByteTimeDomainData(dataArray);
 
                         let maxVolume = Math.max(...dataArray) - 128;
-                        if (maxVolume > 10 && !listening) {
+                        //console.log(`Volume: `+ maxVolume+ ' '+ threshold)
+                        if (maxVolume > threshold && !listening) {
                             // Start listening for pops
                             listening = true;
                             popTimes = [];
                             statusDiv.innerHTML = 'Listening...';
+                        } else if ((maxVolume < topthresh) && !listening) {
+                            topthresh -= 1;
+                            //console.log(`Top Threshold: `+ topthresh)
+                        } else if (maxVolume > bottomthresh && !listening) {
+                            bottomthresh += 1;
+                            //console.log(`Bottom Threshold: `+ bottomthresh)
+                        } else if (!listening) {
+                            threshold = (topthresh + bottomthresh)/2;
+                            //console.log(`##################################`)
+                            console.log(`Threshold New: `+ threshold)
                         }
 
-                        if (listening && maxVolume > 10) {
+                        if (listening && maxVolume > threshold) {
                             const currentTime = audioContext.currentTime;
                             if (popTimes.length > 0) {
                                 const timeBetweenPops = currentTime - popTimes[popTimes.length - 1];
                                 
                                 // Check if popcorn is done
                                 if (timeBetweenPops >= timeout) {
+                                    console.log(`##### HIT #####`)
                                     n_long += 1;
                                     if (n_long>=examples){
                                         statusDiv.innerHTML = '<strong>Your popcorn is done!</strong>';
@@ -150,9 +177,8 @@
                                 } else if (startButton.disabled==true) {
                                     popDetailsDiv.innerHTML = `Time between pops: ${timeBetweenPops.toFixed(2)} seconds<br>`;
                                 }
-
+                                console.log(`Time between pops: ${timeBetweenPops.toFixed(2)} seconds`)
                             }
-
                             popTimes.push(currentTime);
                         }
                     };
@@ -168,6 +194,7 @@
             microphone.disconnect();
             javascriptNode.disconnect();
             popDetailsDiv.innerHTML = ``;
+            n_long = 0;
         }
 
         function set_examples(){
