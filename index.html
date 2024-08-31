@@ -74,7 +74,7 @@
 
         var n_long;
 
-        var examples = localStorage.getItem("examples") || 3
+        var examples = localStorage.getItem("examples") || 2
         if (examples==1){
             var examplesmod = " example"
         } else {
@@ -82,7 +82,7 @@
         }
         document.getElementById("examples_link").innerHTML = examples + examplesmod       
 
-        var timeout = localStorage.getItem("timeout") || 1.5
+        var timeout = localStorage.getItem("timeout") || 1
         if (timeout==1){
             var timemod = " second"
         } else {
