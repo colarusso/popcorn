@@ -146,14 +146,20 @@
                             listening = true;
                             popTimes = [];
                             statusDiv.innerHTML = 'Listening...';
-                        } else if ((maxVolume < topthresh) && !listening) {
-                            topthresh -= 1;
+                        }  
+                        
+                        if ((maxVolume < topthresh) && !listening) {
+                            topthresh -= 0.5;
                             //console.log(`Top Threshold: `+ topthresh)
-                        } else if (maxVolume > bottomthresh && !listening) {
-                            bottomthresh += 1;
+                        } 
+                        
+                        if (maxVolume > bottomthresh && !listening) {
+                            bottomthresh += 0.5;
                             //console.log(`Bottom Threshold: `+ bottomthresh)
-                        } else if (!listening) {
-                            threshold = (topthresh + bottomthresh)/2;
+                        } 
+
+                        if ((maxVolume >= topthresh) && (maxVolume <= bottomthresh) && !listening) {
+                            threshold = ((topthresh + bottomthresh)/2)+(0.05*Math.abs(topthresh-bottomthresh));
                             //console.log(`##################################`)
                             console.log(`Threshold New: `+ threshold)
                         }
@@ -194,7 +200,6 @@
             microphone.disconnect();
             javascriptNode.disconnect();
             popDetailsDiv.innerHTML = ``;
-            n_long = 0;
         }
 
         function set_examples(){
