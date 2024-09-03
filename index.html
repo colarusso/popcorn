@@ -74,7 +74,7 @@
 
         var n_long;
 
-        var examples = localStorage.getItem("examples") || 2
+        var examples = localStorage.getItem("examples") || 3
         if (examples==1){
             var examplesmod = " example"
         } else {
@@ -149,17 +149,17 @@
                         }  
                         
                         if ((maxVolume < topthresh) && !listening) {
-                            topthresh -= 0.5;
+                            topthresh -= 0.33;
                             //console.log(`Top Threshold: `+ topthresh)
                         } 
                         
                         if (maxVolume > bottomthresh && !listening) {
-                            bottomthresh += 0.5;
+                            bottomthresh += 0.33;
                             //console.log(`Bottom Threshold: `+ bottomthresh)
                         } 
 
                         if ((maxVolume >= topthresh) && (maxVolume <= bottomthresh) && !listening) {
-                            threshold = ((topthresh + bottomthresh)/2)+(0.05*Math.abs(topthresh-bottomthresh));
+                            threshold = ((topthresh + bottomthresh)/2)+(0.05*Math.abs(topthresh-bottomthresh)/2);
                             //console.log(`##################################`)
                             console.log(`Threshold New: `+ threshold)
                         }
